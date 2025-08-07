@@ -60,7 +60,46 @@ app.post('/api/download', async (req, res) => {
     
     // Prepare headers for public access
     const publicHeaders = {
-      'User-Agent': '
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    };
+
+    // Add cookie if provided
+    const headers = { ...publicHeaders };
+    if (robloxCookie) {
+      headers['Cookie'] = `.ROBLOSECURITY=${robloxCookie}`;
+    }
+
+    // Try multiple CDN endpoints
+    const cdnEndpoints = [
+      `https://assetdelivery.roblox.com/v1/asset/?id=${assetId}`,
+      `https://www.roblox.com/asset/?id=${assetId}`,
+      `https://assetgame.roblox.com/asset/?id=${assetId}`
+    ];
+
+    let assetData = null;
+    let usedEndpoint = null;
+
+    // Try each endpoint until one works
+    for (const endpoint of cdnEndpoints) {
+      try {
+        console.log(`Trying endpoint: ${endpoint}`);
+        const response = await axios.get(endpoint, { 
+          headers,
+          timeout: 10000,
+          maxRedirects: 5
+        });
+
+        if (response.data && response.data.length > 0) {
+          assetData = response.data;
+          usedEndpoint = endpoint;
+          console.log(`Success with endpoint: ${endpoint}`);
+          break;
+        }
+      } catch (error) {
+        console.log(`Failed with endpoint ${endpoint}:`, error.message);
+        continue;
+      }
+    }
 
     if (!assetData) {
       return res.status(404).json({
@@ -131,7 +170,7 @@ app.get('/api/info/:assetId', async (req, res) => {
 
   try {
     const headers = {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
     };
 
     if (robloxCookie) {
@@ -243,7 +282,7 @@ app.post('/api/batch-download', async (req, res) => {
 // Helper function for single asset download (extracted from main endpoint)
 async function downloadSingleAsset(assetId, robloxCookie, placeId, req) {
   const headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
   };
 
   if (robloxCookie) {
